@@ -28,7 +28,7 @@ class SelfAttention(nn.Module) :
         return attentions_scores @ value, attentions_scores
         
     # q=k=v=x in self attention, this is why we only pass one parameter x
-    def forward(self, x, causal_mask) : 
+    def forward(self, x, causal_mask=None) : 
         batch_size, seq_len, d_model = x.shape
         # query, key, value are of shape (batch_size, seq_len, d_model)
         query, key, value = self.qvk(x).chunk(3, dim=-1)
@@ -41,7 +41,6 @@ class SelfAttention(nn.Module) :
         # we reshape x to (batch_size, seq_len, h, d_k)
         x = x.permute(0,2,1,3)
         # we merge back h and d_k to d_model
-        print(x.shape)
         x = x.contiguous().view(batch_size,seq_len,d_model)
         # we project x with the output projection, size of x (batch_size, seq_len, d_model)
         x = self.output_proj(x)
