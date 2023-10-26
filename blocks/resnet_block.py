@@ -6,9 +6,12 @@ class Block(nn.Module):
     '''
     Changes dimensions from : (B, C_in, H, W) -> (B, C_out, H, W)
     '''
-    def __init__(self, inc, outc, groups = 8):
+    def __init__(self, inc, outc, groups = 8, use_ws = True):
         super().__init__()
-        self.proj = nn.Conv2d(inc, outc, 3, padding = 1)
+        if (use_ws) : 
+            self.proj = 
+        else : 
+            self.proj = nn.Conv2d(inc, outc, 3, padding = 1)
         self.norm = nn.GroupNorm(groups, outc)
         self.act = nn.SiLU()
 
