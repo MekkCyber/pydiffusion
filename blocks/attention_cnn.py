@@ -135,7 +135,8 @@ class LinearAttention(nn.Module):
         mk, mv = map(lambda t: repeat(t, 'h c n -> b h c n', b = b), self.mem_kv)
         # k, v : (B, heads, head_dim, num_mem_kv+H*W)
         k, v = map(partial(torch.cat, dim = -1), ((mk, k), (mv, v)))
-        # According to the paper of Efficient Attention, we need to apply the softmax to each row of q, that's why we use dim=-2
+        # the implementation is based on the paper https://arxiv.org/pdf/1812.01243.pdf
+        # According to this paper, we need to apply the softmax to each row of q, that's why we use dim=-2
         q = q.softmax(dim = -2)
         # According to the paper we apply the softmax to each column, thus dim=-1
         k = k.softmax(dim = -1)
