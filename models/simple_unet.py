@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from blocks.UnetBlock import UnetBlock
+from blocks.unet_block import UnetBlock
 from blocks.positional_encoding import PositionalEncoding
 
 class UNet(nn.Module) : 

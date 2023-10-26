@@ -9,6 +9,7 @@ class UnetBlock(nn.Module) :
         if up:
             self.conv1 = nn.Conv2d(2*inc, outc, 3, padding=1)
             self.transform = nn.ConvTranspose2d(outc, outc, 4, 2, 1)
+            nn.GroupNorm()
         else:
             self.conv1 = nn.Conv2d(inc, outc, 3, padding=1)
             self.transform = nn.Conv2d(outc, outc, 4, 2, 1)

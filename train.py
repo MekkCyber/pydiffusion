@@ -1,4 +1,4 @@
-from models.Unet import UNet
+from models.simple_unet import UNet
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -69,8 +69,8 @@ train_dataloader = DataLoader(train_data, batch_size=BATCH_SIZE, drop_last=True)
 test_dataloader = DataLoader(test_data, batch_size=BATCH_SIZE, drop_last=True)
 
 def get_loss(model, x_0, t) : 
-    pred_noise = model(x_0,t)
-    _, noise = forward_diffusion_sample(x_0, t)
+    noised_img, noise = forward_diffusion_sample(x_0, t)
+    pred_noise = model(noised_img,t)
     return F.l1_loss(noise,pred_noise)
 
 
@@ -90,3 +90,7 @@ for epoch in range(epochs):
       if epoch % 5 == 0 and step == 0:
         print(f"Epoch {epoch} | step {step:03d} Loss: {loss.item()} ")
         sample_plot_image(model)
+
+
+
+## msvcrt
