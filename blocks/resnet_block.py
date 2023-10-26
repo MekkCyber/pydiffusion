@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-
+from weight_standardization import WeightStandardizedConv2d
 
 class Block(nn.Module):
     '''
@@ -9,7 +9,9 @@ class Block(nn.Module):
     def __init__(self, inc, outc, groups = 8, use_ws = True):
         super().__init__()
         if (use_ws) : 
-            self.proj = 
+            # Used by Phil Wang who replaced the standard convolutional layer by a "weight standardized" version, 
+            # which works better in combination with group normalization
+            self.proj = WeightStandardizedConv2d(inc, outc, 3, padding=1)
         else : 
             self.proj = nn.Conv2d(inc, outc, 3, padding = 1)
         self.norm = nn.GroupNorm(groups, outc)
@@ -27,6 +29,9 @@ class Block(nn.Module):
     
 
 class ResnetBlock(nn.Module):
+    '''
+        Changes dimensions from : (B, C_in, H, W) -> (B, C_out, H, W)
+    '''
     def __init__(self, inc, outc, *, time_emb_dim = None, groups = 8):
         super().__init__()
         self.mlp = nn.Sequential(
