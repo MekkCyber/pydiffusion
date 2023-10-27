@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import weight_standardization
 from weight_standardization import WeightStandardizedConv2d
 
 class Block(nn.Module):
@@ -45,15 +46,15 @@ class ResnetBlock(nn.Module):
 
     def forward(self, x, time_emb = None):
         if (self.mlp is not None) and (time_emb is not None):
-            # time_emb : (b, dim) -> (b, 2*outc)
+            # time_emb : (B, dim) -> (B, 2*outc)
             time_emb = self.mlp(time_emb)
-            # time_emb : (b, dim) -> (b, 2*outc, 1, 1)
-            time_emb = time_emb.unsqueeze(-1).unqueeze(-1)
-            # scale : (b, outc, 1, 1) & shift : (b, outc, 1, 1)
+            # time_emb : (B, dim) -> (B, 2*outc, 1, 1)
+            time_emb = time_emb.unsqueeze(-1).unsqueeze(-1)
+            # scale : (B, outc, 1, 1) & shift : (B, outc, 1, 1)
             scale_shift = time_emb.chunk(2, dim = 1)
-        # h : (b, outc, h, w)
+        # h : (B, outc, H, W)
         h = self.block1(x, scale_shift = scale_shift)
-        # h : (b, outc, h, w)
+        # h : (B, outc, H, W)
         h = self.block2(h)
-        # result : (b, outc, h, w)
+        # result : (B, outc, H, W)
         return h + self.res_conv(x)

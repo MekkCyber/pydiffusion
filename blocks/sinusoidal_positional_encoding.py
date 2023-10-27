@@ -4,7 +4,7 @@ import math
 
 
 class SinusoidalPositionalEncoding(nn.Module) : 
-    def __init__(self, dim) : 
+    def __init__(self, dim, theta = None) : 
         super().__init__()
         self.dim = dim
         
