@@ -8,32 +8,10 @@ from torch.optim import Adam
 from tqdm.auto import tqdm
 
 class Trainer(object):
-    def __init__(
-        self,
-        diffusion_model,
-        folder,
-        *,
-        train_batch_size = 16,
-        gradient_accumulate_every = 1,
-        augment_horizontal_flip = True,
-        train_lr = 1e-4,
-        train_num_steps = 100000,
-        ema_update_every = 10,
-        ema_decay = 0.995,
-        adam_betas = (0.9, 0.99),
-        save_and_sample_every = 1000,
-        num_samples = 25,
-        results_folder = './results',
-        amp = False,
-        mixed_precision_type = 'fp16',
-        split_batches = True,
-        convert_image_to = None,
-        calculate_fid = True,
-        inception_block_idx = 2048,
-        max_grad_norm = 1.,
-        num_fid_samples = 50000,
-        save_best_and_latest_only = False
-    ):
+    def __init__(self, diffusion_model, folder,*, train_batch_size = 16, gradient_accumulate_every = 1, augment_horizontal_flip = True, train_lr = 1e-4,
+        train_num_steps = 100000, ema_update_every = 10, ema_decay = 0.995, adam_betas = (0.9, 0.99), save_and_sample_every = 1000, num_samples = 25,
+        results_folder = './results', amp = False, mixed_precision_type = 'fp16', split_batches = True, convert_image_to = None, calculate_fid = True,
+        inception_block_idx = 2048, max_grad_norm = 1., num_fid_samples = 50000, save_best_and_latest_only = False):
         super().__init__()
         self.accelerator = Accelerator(
             split_batches = split_batches,

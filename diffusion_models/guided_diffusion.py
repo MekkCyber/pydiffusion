@@ -365,6 +365,8 @@ def classifier_cond_fn(x, t, classifier, y, classifier_scale=1):
         # computes gradient with respect to x_in
         grad = torch.autograd.grad(selected.sum(), x_in)[0] * classifier_scale
         return grad
+
+
 from base_models.complex_unet import Unet
 model = Unet(
     dim = 64,
@@ -374,7 +376,7 @@ image_size = 128
 diffusion = GaussianDiffusion(
     model,
     image_size = image_size,
-    timesteps = 100  # number of steps
+    timesteps = 1 # number of steps
 )
 
 classifier = Classifier(image_size=image_size, num_classes=1000, t_dim=1)
@@ -388,4 +390,3 @@ sampled_images = diffusion.sample(
         "classifier_scale":1,
     }
 )
-print(sampled_images.shape) # (4, 3, 128, 128)
