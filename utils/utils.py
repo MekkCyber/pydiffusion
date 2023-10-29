@@ -27,3 +27,21 @@ def prob_mask_like(shape, prob, device):
     else:
         # Tensor.uniform_ : Fills tensor with numbers sampled from the continuous uniform distribution:
         return torch.zeros(shape, device = device).float().uniform_(0, 1) < prob
+    
+def num_to_groups(num, divisor):
+    groups = num // divisor
+    remainder = num % divisor
+    arr = [divisor] * groups
+    if remainder > 0:
+        arr.append(remainder)
+    return arr
+
+def cycle(dl):
+    while True:
+        for data in dl:
+            yield data
+
+def function_convert_image_to(img_type, image):
+    if image.mode != img_type:
+        return image.convert(img_type)
+    return image

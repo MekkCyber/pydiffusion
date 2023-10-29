@@ -1,15 +1,23 @@
 import torch
 import torch.nn as nn
 from accelerate import Accelerator
+import sys
+sys.path.append('D:\\machine_learning\\projects\\stable_diffusion\\datasets')
 from datasets.dataset import Dataset
 from torch.utils.data import DataLoader
 from torch.optim import Adam
-
+import math
+from torchvision import utils
+from multiprocessing import cpu_count
+from ema_pytorch import EMA
+from pathlib import Path
 from tqdm.auto import tqdm
 
+from utils.utils import num_to_groups, cycle
+
 class Trainer(object):
-    def __init__(self, diffusion_model, folder,*, train_batch_size = 16, gradient_accumulate_every = 1, augment_horizontal_flip = True, train_lr = 1e-4,
-        train_num_steps = 100000, ema_update_every = 10, ema_decay = 0.995, adam_betas = (0.9, 0.99), save_and_sample_every = 1000, num_samples = 25,
+    def __init__(self, diffusion_model, folder,*, train_batch_size = 16, grad_accumulation_freq = 1, augment_horizontal_flip = True, train_lr = 1e-4,
+        train_num_steps = 100000, ema_update_every = 10, ema_decay = 0.995, adam_betas = (0.9, 0.99), save_and_sample_frequency = 1000, num_samples = 25,
         results_folder = './results', amp = False, mixed_precision_type = 'fp16', split_batches = True, convert_image_to = None, calculate_fid = True,
         inception_block_idx = 2048, max_grad_norm = 1., num_fid_samples = 50000, save_best_and_latest_only = False):
         super().__init__()
@@ -21,59 +29,36 @@ class Trainer(object):
         self.channels = diffusion_model.channels
         is_ddim_sampling = diffusion_model.is_ddim_sampling
 
-        # default convert_image_to depending on channels
-
-        if not exists(convert_image_to):
+        if not convert_image_to is None:
             convert_image_to = {1: 'L', 3: 'RGB', 4: 'RGBA'}.get(self.channels)
 
-        # sampling and training hyperparameters
-
-        assert has_int_squareroot(num_samples), 'number of samples must have an integer square root'
+        assert math.sqrt(num_samples)**2==num_samples, 'number of samples must have an integer square root'
         self.num_samples = num_samples
-        self.save_and_sample_every = save_and_sample_every
-
+        self.save_and_sample_freq = save_and_sample_frequency
         self.batch_size = train_batch_size
-        self.gradient_accumulate_every = gradient_accumulate_every
-        assert (train_batch_size * gradient_accumulate_every) >= 16, f'your effective batch size (train_batch_size x gradient_accumulate_every) should be at least 16 or above'
+        self.grad_accumulation_freq = grad_accumulation_freq
+        assert (train_batch_size * grad_accumulation_freq) >= 16, f'Effective batch size (train_batch_size x grad_accumulation_freq) should be at least 16'
 
         self.train_num_steps = train_num_steps
         self.image_size = diffusion_model.image_size
-
         self.max_grad_norm = max_grad_norm
-
-        # dataset and dataloader
 
         self.ds = Dataset(folder, self.image_size, augment_horizontal_flip = augment_horizontal_flip, convert_image_to = convert_image_to)
 
         assert len(self.ds) >= 100, 'you should have at least 100 images in your folder. at least 10k images recommended'
 
         dl = DataLoader(self.ds, batch_size = train_batch_size, shuffle = True, pin_memory = True, num_workers = cpu_count())
-
-        dl = self.accelerator.prepare(dl)
-        #self.dl = cycle(dl)
-        self.dl = dl
-
-        # optimizer
-
         self.opt = Adam(diffusion_model.parameters(), lr = train_lr, betas = adam_betas)
-
-        # for logging results in a folder periodically
+        self.dl, self.opt, self.model = self.accelerator.prepare(dl, self.opt, self.model)
+        self.dl = cycle(dl)
 
         if self.accelerator.is_main_process:
             self.ema = EMA(diffusion_model, beta = ema_decay, update_every = ema_update_every)
             self.ema.to(self.device)
-
         self.results_folder = Path(results_folder)
         self.results_folder.mkdir(exist_ok = True)
-
-        # step counter state
-
         self.step = 0
-
-        # prepare model, dataloader, optimizer with accelerator
-
-        self.model, self.opt = self.accelerator.prepare(self.model, self.opt)
-
+        
         # FID-score computation
 
         self.calculate_fid = calculate_fid and self.accelerator.is_main_process
@@ -84,17 +69,17 @@ class Trainer(object):
                     "WARNING: Robust FID computation requires a lot of generated samples and can therefore be very time consuming."\
                     "Consider using DDIM sampling to save time."
                 )
-            self.fid_scorer = FIDEvaluation(
-                batch_size=self.batch_size,
-                dl=self.dl,
-                sampler=self.ema.ema_model,
-                channels=self.channels,
-                accelerator=self.accelerator,
-                stats_dir=results_folder,
-                device=self.device,
-                num_fid_samples=num_fid_samples,
-                inception_block_idx=inception_block_idx
-            )
+            # self.fid_scorer = FIDEvaluation(
+            #     batch_size=self.batch_size,
+            #     dl=self.dl,
+            #     sampler=self.ema.ema_model,
+            #     channels=self.channels,
+            #     accelerator=self.accelerator,
+            #     stats_dir=results_folder,
+            #     device=self.device,
+            #     num_fid_samples=num_fid_samples,
+            #     inception_block_idx=inception_block_idx
+            # )
 
         if save_best_and_latest_only:
             assert calculate_fid, "`calculate_fid` must be True to provide a means for model evaluation for `save_best_and_latest_only`."
@@ -111,14 +96,12 @@ class Trainer(object):
             return
 
         data = {
-            'step': self.step,
+            'step': self.step, 
             'model': self.accelerator.get_state_dict(self.model),
             'opt': self.opt.state_dict(),
             'ema': self.ema.state_dict(),
-            'scaler': self.accelerator.scaler.state_dict() if exists(self.accelerator.scaler) else None,
-            'version': __version__
+            'scaler': self.accelerator.scaler.state_dict() if self.accelerator.scaler is not None else None,
         }
-
         torch.save(data, str(self.results_folder / f'model-{milestone}.pt'))
 
     def load(self, milestone):
@@ -135,10 +118,7 @@ class Trainer(object):
         if self.accelerator.is_main_process:
             self.ema.load_state_dict(data["ema"])
 
-        if 'version' in data:
-            print(f"loading from version {data['version']}")
-
-        if exists(self.accelerator.scaler) and exists(data['scaler']):
+        if self.accelerator.scaler is not None and data['scaler'] is not None:
             self.accelerator.scaler.load_state_dict(data['scaler'])
 
     def train(self):
@@ -146,17 +126,13 @@ class Trainer(object):
         device = accelerator.device
 
         with tqdm(initial = self.step, total = self.train_num_steps, disable = not accelerator.is_main_process) as pbar:
-
             while self.step < self.train_num_steps:
-
                 total_loss = 0.
-
-                for _ in range(self.gradient_accumulate_every):
+                for _ in range(self.grad_accumulation_freq):
                     data = next(self.dl).to(device)
-
                     with self.accelerator.autocast():
                         loss = self.model(data)
-                        loss = loss / self.gradient_accumulate_every
+                        loss = loss / self.grad_accumulation_freq
                         total_loss += loss.item()
 
                     self.accelerator.backward(loss)
@@ -174,20 +150,16 @@ class Trainer(object):
                 self.step += 1
                 if accelerator.is_main_process:
                     self.ema.update()
-
-                    if self.step != 0 and divisible_by(self.step, self.save_and_sample_every):
+                    if self.step != 0 and self.step%self.save_and_sample_freq==0 :
                         self.ema.ema_model.eval()
-
                         with torch.inference_mode():
-                            milestone = self.step // self.save_and_sample_every
+                            milestone = self.step // self.save_and_sample_freq
                             batches = num_to_groups(self.num_samples, self.batch_size)
                             all_images_list = list(map(lambda n: self.ema.ema_model.sample(batch_size=n), batches))
 
                         all_images = torch.cat(all_images_list, dim = 0)
 
                         utils.save_image(all_images, str(self.results_folder / f'sample-{milestone}.png'), nrow = int(math.sqrt(self.num_samples)))
-
-                        # whether to calculate fid
 
                         if self.calculate_fid:
                             fid_score = self.fid_scorer.fid_score()
@@ -199,7 +171,6 @@ class Trainer(object):
                             self.save("latest")
                         else:
                             self.save(milestone)
-
                 pbar.update(1)
 
         accelerator.print('training complete')

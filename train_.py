@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sample import sample_plot_image
 import numpy as np
+
 model = UNet()
 device = 'cpu'
 def linear_beta_scheduler(timesteps, start=0.0001, end=0.02):

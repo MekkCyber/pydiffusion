@@ -20,7 +20,7 @@ class GaussianDiffusion(nn.Module):
         super().__init__()
         # why ??
         assert not (type(self) == GaussianDiffusion and model.channels != model.out_dim)
-        assert not model.random_or_learned_sinusoidal_cond
+        assert not model.random_or_learned_sinusoidal
 
         self.model = model
         self.channels = self.model.channels
@@ -220,7 +220,10 @@ class GaussianDiffusion(nn.Module):
                 continue
 
             alpha = self.alphas_cumprod[time]
+            alpha = extract(self.alphas_cumprod, time, shape)
             alpha_next = self.alphas_cumprod[time_next]
+            alpha_next = extract(self.alphas_cumprod, torch.full((batch,),time_next,device = device, dtype = torch.long), shape)
+
 
             sigma = eta * ((1 - alpha / alpha_next) * (1 - alpha_next) / (1 - alpha)).sqrt()
             c = (1 - alpha_next - sigma ** 2).sqrt()

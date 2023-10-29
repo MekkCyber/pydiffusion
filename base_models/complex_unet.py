@@ -200,4 +200,3 @@ model = Unet(dim=16, init_dim=48, out_dim=7)
 
 model(torch.rand(1,3,32,32),torch.rand(1))
 
-print(model(torch.rand(1,3,32,32),torch.rand(1)).shape)

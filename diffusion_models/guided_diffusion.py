@@ -231,7 +231,10 @@ class GaussianDiffusion(nn.Module):
                 continue
 
             alpha = self.alphas_cumprod[time]
+            alpha = extract(self.alphas_cumprod, time, shape)
             alpha_next = self.alphas_cumprod[time_next]
+            alpha_next = extract(self.alphas_cumprod, torch.full((batch,),time_next,device = device, dtype = torch.long), shape)
+
 
             sigma = eta * ((1 - alpha / alpha_next) * (1 - alpha_next) / (1 - alpha)).sqrt()
             c = (1 - alpha_next - sigma ** 2).sqrt()
