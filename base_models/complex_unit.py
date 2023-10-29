@@ -122,8 +122,8 @@ class Unet(nn.Module):
                 # Attention : Doesnt change the size
                 # Upsample : (B, dim, H, W) -> (B, init_dim, H, W) H and W don't change because this is the last iteration
             self.ups.append(nn.ModuleList([
-                ResnetBlock(dim_out + dim_in, dim_out, time_emb_dim = time_dim),
-                ResnetBlock(dim_out + dim_in, dim_out, time_emb_dim = time_dim),
+                ResnetBlock(dim_out + dim_in, dim_out, time_emb_dim = time_dim, groups=resnet_block_groups),
+                ResnetBlock(dim_out + dim_in, dim_out, time_emb_dim = time_dim, groups=resnet_block_groups),
                 attn(dim_out, dim_head = dim_head, heads = num_heads),
                 UpSample(dim_out, dim_in) if not is_last else  nn.Conv2d(dim_out, dim_in, 3, padding = 1)
         ]))

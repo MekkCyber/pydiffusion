@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
-import weight_standardization
-from weight_standardization import WeightStandardizedConv2d
+from blocks.weight_standardization import WeightStandardizedConv2d
 
 class Block(nn.Module):
     '''

@@ -1,4 +1,4 @@
-from models.simple_unet import UNet
+from base_models.simple_unet import UNet
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

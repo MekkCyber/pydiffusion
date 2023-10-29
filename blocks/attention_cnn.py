@@ -5,7 +5,7 @@ from einops import rearrange, repeat
 from functools import partial
 from torch import einsum
 
-from rms_norm import RMSNorm
+from blocks.rms_norm import RMSNorm
 
 from functools import wraps
 from packaging import version
