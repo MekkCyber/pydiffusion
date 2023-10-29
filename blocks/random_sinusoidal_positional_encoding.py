@@ -13,6 +13,7 @@ class RandomOrLearnedSinusoidalPosEnc(nn.Module):
         self.weights = nn.Parameter(torch.randn(half_dim), requires_grad = not is_random)
 
     def forward(self, x):
+        device = x.device
         # x : (B, 1)
         x = rearrange(x, 'b -> b 1')
         # freqs : (B, half_dim)
@@ -21,4 +22,4 @@ class RandomOrLearnedSinusoidalPosEnc(nn.Module):
         embbeddings = torch.cat((freqs.sin(), freqs.cos()), dim = -1)
         # embeddings : (B, dim+1) ??!
         embbeddings = torch.cat((x, embbeddings), dim = -1)
-        return embbeddings
+        return embbeddings.to(device)

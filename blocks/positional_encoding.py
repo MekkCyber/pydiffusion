@@ -9,10 +9,11 @@ class PositionalEncoding(nn.Module) :
     # converts time steps to embedded time steps
     # N -> (N, dim)
     def forward(self, time) : 
+        device = time.device
         denom = torch.tensor(10000)**((2*torch.arange(self.dim))/self.dim)
         time = time.type(torch.float)
         embeddings = time.unsqueeze(1)@denom.unsqueeze(0)
         embeddings[:,0::2] = torch.cos(embeddings[:,0::2])
         embeddings[:,1::2] = torch.sin(embeddings[:,1::2])
-        return embeddings
+        return embeddings.to(device)
 

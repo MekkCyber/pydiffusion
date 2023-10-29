@@ -12,8 +12,8 @@ def unnormalize_to_zero_to_one(t):
     return (t + 1) * 0.5
 
 def extract(a, t, x_shape):
-    b, *_ = t.shape
-    out = a.gather(-1, t)
+    b = t.shape[0]
+    out = a.gather(-1 ,t) # out = a[t] in the case of a 1D tensor a
     return out.reshape(b, *((1,) * (len(x_shape) - 1)))
 
 def identity(t, *args, **kwargs):

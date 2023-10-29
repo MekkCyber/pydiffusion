@@ -10,9 +10,10 @@ class SinusoidalPositionalEncoding(nn.Module) :
         
     def forward(self, t) : 
         device = t.device
+        t = t.type(torch.float)
         half_dim = self.dim // 2
         denominator = math.log(1000)/(half_dim - 1)
-        embeddings = torch.exp(torch.arange(half_dim)*(-denominator))
+        embeddings = torch.exp(torch.arange(half_dim, device=device)*(-denominator))
         # t : (b) & embeddings : (dim/2) -> embeddings : (b, dim/2)
         embeddings = t.unsqueeze(1)@embeddings.unsqueeze(0)
         # embeddings : (b, dim/2) -> embeddings : (b,dim)
