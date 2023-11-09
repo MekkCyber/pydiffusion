@@ -1,6 +1,6 @@
 # pydiffusion
 A repository for diffusion models from scratch
-<img src="./images/denoising-diffusion.png" width="500px"></img>
+<img src="./denoising-diffusion.png" width="500px"></img>
 
 ## Denoising Diffusion Probabilistic Model, in Pytorch
 
@@ -8,7 +8,7 @@ Implementation of <a href="https://arxiv.org/abs/2006.11239">Denoising Diffusion
 
 This implementation was transcribed from the official Tensorflow version <a href="https://github.com/hojonathanho/diffusion">here</a> and Phil Wang's implementation <a href="https://github.com/lucidrains/denoising-diffusion-pytorch"> here </a>
 
-<img src="./images/sample-10.png" width="500px"><img>  
+<img src="sample-10.png" width="500px"><img>  
 
 Sample after training a gaussian diffusion model on Kaggle bird dataset with the configuration : 
 ```python
