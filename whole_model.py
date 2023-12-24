@@ -96,7 +96,6 @@ class DownSample(nn.Module) :
         return self.conv(self.down(x))
 
 class RMSNorm(nn.Module):
-
     def __init__(self, dim):
         super().__init__()
         self.g = nn.Parameter(torch.ones(1, dim, 1, 1))
